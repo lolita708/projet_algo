@@ -5,7 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include "projet.h"
-
+//test
 // /**
 //  * @brief calcule le produit scalaire de deux vecteurs
 //  * 
@@ -266,6 +266,7 @@ int main() {
   
 
   return 0;
+
 }
 
 //./hull-generator 10 | ./hull-viewer ./main
