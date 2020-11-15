@@ -48,7 +48,8 @@ bool is_left_turn(const struct vec *p1,const struct vec *p2, const struct vec *p
 }
 ///////////vectset
 void vecset_create(struct vecset *self){
-  self ->data = calloc (6, sizeof (const struct vec));
+  struct vec *data = calloc (6, sizeof (const struct vec));
+  self ->data = data;
   self->size =0;
   self->capacity = 6;
 }
@@ -61,9 +62,14 @@ void vecset_destroy(struct vecset *self){
 }
 
 void grow_data (struct vecset *self){
-  struct vec *data = calloc(self->capacity*2, sizeof(struct vec));
-
+  struct vec *data = calloc(self->capacity*2, sizeof(struct vec));  
+  memcpy(data,self->data,self->size*sizeof(struct vec));
+  free(self->data);
+  self->data = data;
+  self->capacity= self->capacity*2;
 }
+
+
 
 void vecset_add(struct vecset *self, struct vec p){
 
@@ -244,10 +250,10 @@ void quickhull(const struct vecset *in, struct vecset *out);
 /////Partie 6 : Pilote//////
 #define BUFSIZE 1024
 int main() {
-  struct vecset *in;
-  struct vecset *out;
-  vecset_create(in);
-  vecset_create(out);
+  struct vecset in;
+  struct vecset out;
+  vecset_create(&in);
+  vecset_create(&out);
   setbuf(stdout, NULL); // avoid buffering in the output
   char buffer[BUFSIZE];
   fgets(buffer, BUFSIZE , stdin);
@@ -258,15 +264,18 @@ int main() {
     char *endptr = buffer;
     p.x = strtod(endptr, &endptr);
     p.y = strtod(endptr, &endptr);
-    vecset_add(in,p);
+    vecset_add(&in,p);
     // then do something with p
   }
-
-  jarvis_march(in, out);
-  
+  printf("in\n");
+  afficher_vecset(&in);
+  jarvis_march(&in, &out);
+  printf("out\n");
+  afficher_vecset(&out);
 
   return 0;
 
 }
 
 //./hull-generator 10 | ./hull-viewer ./main
+// gcc -Wall -std=c99 -O2 -g -o test test.c
