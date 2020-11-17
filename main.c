@@ -123,7 +123,7 @@ const struct vec *vecset_min(const struct vecset *self,comp_func_t func, const v
   return min;
 }
 
-static void array_swap (struct vecset  *self, size_t k, size_t l){
+static void array_swap (struct vecset *self, size_t k, size_t l){
   struct vec temp = self->data[k];
   self->data[k] = self->data[l] ;
   self->data[l] =temp;
@@ -175,8 +175,33 @@ const struct vec *vecset_second(const struct vecset *self){
 
 void afficher_vecset(const struct vecset *self){
   for(size_t i =0; i<self->size;++i){
-    printf("(%f , %f) \n", self->data[i].x, self->data[i].y);
+    printf("%f %f\n", self->data[i].x, self->data[i].y);
   }
+}
+
+static int compare_angle(const struct vec *p1, const struct vec *p2, const void *ctx)
+{
+    assert(ctx);
+    assert(p1);
+    assert(p2);
+    const struct vec * ref = ctx;
+
+    double X1 = p1->x - ref->x;
+    double Y2 = p1->y - ref->y;
+
+    double X3 = p2->x - ref->x;
+    double Y4 = p2->y - ref->y;
+
+    double a1 = atan2(X1, Y2);
+    double a2 = atan2(X3, Y4);
+
+    if (a1 > a2) {
+        return 1;
+    }
+    if (a1 < a2) {
+        return -1;
+    }
+    return comp(p1, p2, ctx);
 }
 
 ///////////partie 3///// Marche de Jarvis
@@ -225,20 +250,46 @@ void jarvis_march(const struct vecset *in, struct vecset *out){
 ////Partie 4 : Parcours de Graham/////
 
 void graham_scan(const struct vecset *in, struct vecset *out){
+  assert(in);
+  assert(out);
   //Le point le plus bas
-  const struct vec *bas = vecset_min (in, comp, NULL);
+  struct vec *bas = vecset_min (in, comp, NULL);
   // Copier l'entrée dans copy
-  struct vecset *copy = malloc(sizeof(struct vecset));
-  vecset_create(copy);
+  struct vecset copy ;
+  vecset_create(&copy);
   
   for (size_t i = 0; i < in->size; ++i) {
     if(comp(&in->data[i], bas, NULL)){
-      vecset_push(copy, in->data[i]);
+      vecset_push(&copy, in->data[i]);
     }
   }
-  
+  //Sort
+  vecset_sort(&copy, &compare_angle, bas);
 
+  //Premier élément
+  struct vec *first = (&copy)->data;
 
+  //push le point le plus bas et le premier point dans out
+  vecset_push(out, *bas);
+  vecset_push(out, *first);
+
+  const struct vec *top;
+  const struct vec *second;
+
+  for (size_t i = 1; i <(&copy)->size; ++i) {
+    top = vecset_top(out);
+    second = vecset_second(out);
+    const struct vec sup = (&copy)->data[i];
+    while (out->size >= 2 && is_left_turn(second, top, &sup)){
+      vecset_pop(out);
+      top = vecset_top(out);
+      second = vecset_second(out);
+    }
+    vecset_push(out, (&copy)->data[i]);
+  }
+
+  //Détruire la copie de in
+  vecset_destroy(&copy);
 }
 
 
@@ -252,8 +303,10 @@ void quickhull(const struct vecset *in, struct vecset *out);
 int main() {
   struct vecset in;
   struct vecset out;
+  struct vecset out1;
   vecset_create(&in);
   vecset_create(&out);
+  vecset_create(&out1);
   setbuf(stdout, NULL); // avoid buffering in the output
   char buffer[BUFSIZE];
   fgets(buffer, BUFSIZE , stdin);
@@ -269,13 +322,35 @@ int main() {
   }
   printf("in\n");
   afficher_vecset(&in);
-  jarvis_march(&in, &out);
+  printf("graham\n");
+  graham_scan(&in,&out);
   printf("out\n");
   afficher_vecset(&out);
-
+  printf("Jarvis\n");
+  jarvis_march(&in,&out1);
+  afficher_vecset(&out1);
   return 0;
 
+  // printf("%zu\n", count);
+
+  // for (size_t i = 0; i < count; ++i) {
+  //   fgets(buffer, BUFSIZE, stdin);
+
+  //   char *endptr = buffer;
+  //   double x = strtod(endptr, &endptr);
+  //   double y = strtod(endptr, &endptr);
+
+  //   printf("%f %f\n", x, y);
+  // }
+ 
+  vecset_destroy(&in);
+  vecset_destroy(&out);
+  vecset_destroy(&out1);
 }
 
 //./hull-generator 10 | ./hull-viewer ./main
-// gcc -Wall -std=c99 -O2 -g -o test test.c
+// gcc -Wall -std=c99 -O2 -g -o main main.c
+// valgrind --leak-check=full ./main
+
+
+
