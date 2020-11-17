@@ -233,17 +233,7 @@ void jarvis_march(const struct vecset *in, struct vecset *out){
     }
     p=q;
   }while(p!=l);
-  // const struct vec *start = vecset_min (in, comp, NULL);
-  // vecset_add(out, *start);
-  // struct vec prevVec = *start;
-  // struct vec *next;
-  
-  // do{
-  //   for(size_t i =0; i< in->size; ++i){
-      
-  //   }
-    
-  // }while(!is_equal(start,&prevVec));
+ 
 }
 
 
@@ -301,15 +291,15 @@ void quickhull(const struct vecset *in, struct vecset *out);
 /////Partie 6 : Pilote//////
 #define BUFSIZE 1024
 int main() {
-  struct vecset in;
-  struct vecset out;
-  struct vecset out1;
-  vecset_create(&in);
-  vecset_create(&out);
-  vecset_create(&out1);
   setbuf(stdout, NULL); // avoid buffering in the output
   char buffer[BUFSIZE];
   fgets(buffer, BUFSIZE , stdin);
+  struct vecset in;
+  vecset_create(&in);
+  struct vecset out;
+  vecset_create(&out);
+  
+  
   size_t count = strtol(buffer, NULL, 10);
   for (size_t i = 0; i < count; ++i) {
     struct vec p;
@@ -318,34 +308,22 @@ int main() {
     p.x = strtod(endptr, &endptr);
     p.y = strtod(endptr, &endptr);
     vecset_add(&in,p);
-    // then do something with p
+    
   }
-  printf("in\n");
-  afficher_vecset(&in);
-  printf("graham\n");
-  graham_scan(&in,&out);
-  printf("out\n");
-  afficher_vecset(&out);
-  printf("Jarvis\n");
-  jarvis_march(&in,&out1);
-  afficher_vecset(&out1);
-  return 0;
 
-  // printf("%zu\n", count);
+  jarvis_march(&in,&out);
+  //char buffer2[BUFSIZE];
+  printf("%zu\n", (&out)->size);
+  for (size_t i = 0; i < (&out)->size; ++i) {
+    // fgets(buffer2, BUFSIZE,(&out)->data[i]);
 
-  // for (size_t i = 0; i < count; ++i) {
-  //   fgets(buffer, BUFSIZE, stdin);
+    // char *endptr = buffer;
+    // double x = strtod(endptr, &endptr);
+    // double y = strtod(endptr, &endptr);
 
-  //   char *endptr = buffer;
-  //   double x = strtod(endptr, &endptr);
-  //   double y = strtod(endptr, &endptr);
-
-  //   printf("%f %f\n", x, y);
-  // }
- 
-  vecset_destroy(&in);
+    printf("%f %f\n", (&out)->data[i].x,(&out)->data[i].y );
+  }
   vecset_destroy(&out);
-  vecset_destroy(&out1);
 }
 
 //./hull-generator 10 | ./hull-viewer ./main
