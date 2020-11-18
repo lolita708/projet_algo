@@ -285,7 +285,136 @@ void graham_scan(const struct vecset *in, struct vecset *out){
 
 //////Partie 5 : Enveloppe rapide/////
 
-void quickhull(const struct vecset *in, struct vecset *out);
+struct vecset * findhull(struct vecset * S, const struct vec * X, const struct vec * Y)
+{
+  if (S->size == 0) {
+    struct vecset *tab = malloc(sizeof(struct vecset));
+    vecset_create(tab);
+    return tab;
+  }
+
+    // m est le coefficient principal de (X,Y)
+    double m = (X->y - Y->y) / (X->x - Y->x);
+    // p est l'ordre à l'origine de (X,Y)
+    double p = X->y - m * X->x;
+
+    // Calcule le point le plus éloigné de l'ensemble à partir de (X,Y)
+    struct vec *P;
+    double res = 0;
+    for (size_t i = 0; i < S->size; ++i) {
+      if ((fabs(m * S->data[i].x - S->data[i].y + p) / sqrt(pow(m, 2) + 1)) > res) {
+        P = &S->data[i];
+        res = (fabs(m * S->data[i].x - S->data[i].y + p) / sqrt(pow(m, 2) + 1));
+      }
+    }
+
+    struct vecset *S1 = malloc(sizeof(struct vecset));
+    struct vecset *S2 = malloc(sizeof(struct vecset));
+    vecset_create(S1);
+    vecset_create(S2);
+
+    for (size_t i = 0; i < S->size; i++) {
+      if (S->data[i].x != P->x && S->data[i].y != P->y) {
+        const struct vec T = S->data[i];
+        // Si le point est à gauche de (X,P)
+        if (is_left_turn(X, P, &T)) {
+            vecset_add(S1, S->data[i]);
+        // Si le point est à gauche de (P,Y)
+        } else if (is_left_turn(P, Y, &T)) {
+            vecset_add(S2, S->data[i]);
+        }
+      }
+    }
+
+    struct vecset *R1 = findhull(S1, X, P);
+    struct vecset *R2 = findhull(S2, P, Y);
+
+    struct vecset *R = malloc(sizeof(struct vecset));
+    vecset_create(R);
+
+    // Union de R1, P and R2
+    for (size_t i = 0; i < R1->size; ++i) {
+        vecset_add(R, R1->data[i]);
+    }
+    vecset_add(R, *P);
+    for (size_t i = 0; i < R2->size; ++i) {
+        vecset_add(R, R2->data[i]);
+    }
+
+    // Détruire les vecset crées
+    vecset_destroy(S1);
+    vecset_destroy(S2);
+    vecset_destroy(R1);
+    vecset_destroy(R2);
+    free(S1);
+    free(S2);
+    free(R1);
+    free(R2);
+    S1 = NULL;
+    S2 = NULL;
+    R1 = NULL;
+    R2 = NULL;
+
+    return R;
+}
+
+
+
+void quickhull(const struct vecset *in, struct vecset *out)
+{
+    assert(in);
+    assert(out);
+
+    // Point le plus à gauche de l'entrée
+    const struct vec A = *vecset_min(in, compare_x, NULL);
+    // Point le plus à droite de l'entrée
+    const struct vec B = *vecset_max(in, compare_x, NULL);
+
+    struct vecset *S1 = malloc(sizeof(struct vecset));
+    struct vecset *S2 = malloc(sizeof(struct vecset));
+    vecset_create(S1);
+    vecset_create(S2);
+
+    // Copier de l'entrée dans S (sans les points les plus à gauche et à droite)
+    for (size_t i = 0; i < in->size; i++) {
+        if (in->data[i].x != A.x && in->data[i].x != B.x && in->data[i].y != A.y && in->data[i].y != B.y)
+        {
+            const struct vec test = in->data[i];
+            if (is_left_turn(&A, &B, &test)) {
+                vecset_push(S1, in->data[i]);
+            } else {
+                vecset_push(S2, in->data[i]);
+            }
+        }
+    }
+
+    struct vecset *R1 = findhull(S1, &A, &B);
+    struct vecset *R2 = findhull(S2, &B, &A);
+
+    // Union de A, R1, B and R2
+    vecset_add(out, A);
+    for (int i = 0; i < R1->size; ++i) {
+        vecset_add(out, R1->data[i]);
+    }
+    vecset_add(out, B);
+    for (int i = 0; i < R2->size; ++i) {
+        vecset_add(out, R2->data[i]);
+    }
+
+    // Détruire les vecset crées
+    vecset_destroy(S1);
+    vecset_destroy(S2);
+    vecset_destroy(R1);
+    vecset_destroy(R2);
+    free(S1);
+    free(S2);
+    free(R1);
+    free(R2);
+    S1 = NULL;
+    S2 = NULL;
+    R1 = NULL;
+    R2 = NULL;
+}
 
 
 /////Partie 6 : Pilote//////
@@ -312,6 +441,7 @@ int main() {
   }
 
   jarvis_march(&in,&out);
+  
   //char buffer2[BUFSIZE];
   printf("%zu\n", (&out)->size);
   for (size_t i = 0; i < (&out)->size; ++i) {
